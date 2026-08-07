@@ -30,6 +30,8 @@ import (
 	"sigs.k8s.io/release-utils/version"
 )
 
+const DEFAULT_OUTPUT_LICENSE = "CC0-1.0"
+
 type merge struct {
 	settings *MergeSettings
 	out      *cydx.BOM
@@ -567,15 +569,27 @@ func (m *merge) initOutBomFromPrimary(primaryBom *cydx.BOM) {
 		m.out.Metadata.Supplier = primaryBom.Metadata.Supplier
 	}
 
-	// Preserve primary's licenses if present
-	if primaryBom.Metadata != nil && primaryBom.Metadata.Licenses != nil {
-		m.out.Metadata.Licenses = primaryBom.Metadata.Licenses
+	docLicense := m.settings.Assemble.DocLicense
+
+	if docLicense == "" {
+		// Preserve primary's licenses if present
+		if primaryBom.Metadata != nil && primaryBom.Metadata.Licenses != nil {
+			m.out.Metadata.Licenses = primaryBom.Metadata.Licenses
+		} else {
+			// Default license
+			m.out.Metadata.Licenses = &cydx.Licenses{
+				{
+					License: &cydx.License{ID: DEFAULT_OUTPUT_LICENSE},
+				},
+			}
+		}
 	} else {
-		// Default license
-		m.out.Metadata.Licenses = &cydx.Licenses{
-			{
-				License: &cydx.License{ID: "CC-BY-1.0"},
-			},
+		if strings.ToLower(docLicense) != "none" && docLicense != "" {
+			m.out.Metadata.Licenses = &cydx.Licenses{
+				{
+					License: &cydx.License{ID: docLicense},
+				},
+			}
 		}
 	}
 
